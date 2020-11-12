@@ -41,12 +41,29 @@ week_10_folds <- vfold_cv(week_10_train, v = 10)
 
 **Prompt:** Create a workflow object called `mod_1_wfl` which uses the `lm` engine to run a linear regression. Use a recipe in which reg_chg is a function of `treatment` and `poverty_n`. (No need for an interaction term today.) 
 
+
 * Calculate the RMSE for this model on the training data. (We did a similar exercise on Tuesday, so feel free to refer to your prior code.)
 
 * Create a model which produces a lower RMSE on the training data. (Do not use the cross-validated data sets until the next Scene.) You may do anything you like! Our advice is to keep the same basic structure as `mod_1_wfl`, but to change the formula and to experiment with various `step_` functions. Call this workflow `mod_2_wfl`. Hints: `step_poly()` and `step_bs()` are fun to play with.
 
 
- 
+```{r}
+Mod_1_wfl <- workflow() %>%
+  add_recipe(recipe(reg_chg ~ treatment + poverty_n, data = week_10)) %>%
+  add_model(linear_reg() %>% set_engine("lm")) 
+  
+scene2 <- mod_1_wfl %>%
+  fit(data = week_10) %>%
+  predict(new_data = week_10)
+  
+results <- tibble(results = week_10$reg_chg, predictions = scene2$.pred)
+
+results %>%
+  mutate(sq_diff = ((results - predictions)^2)) %>%
+  summarize(rmse = sqrt(mean(sq_diff)))
+
+```
+
 
 ## Scene 2
 
@@ -55,6 +72,21 @@ week_10_folds <- vfold_cv(week_10_train, v = 10)
 * Calculate mean RMSE using `week_10_folds` for both `mod_1_wfl` and `mod_2_wfl`.  Even though I have no idea what model you built, I bet that the cross-validated `mod_1_wfl` RSME will be better (lower) that the one for `mod_2_wfl`.
 
 * Write a few sentences explaining why a model which worked so well on week_10_train worked so poorly on week_10_folds.
+
+
+```{r}
+mod_1_wfl_folds <- vfold_cv(week_10, v = 10) 
+
+mod_1_wfl %>%
+fit_resamples(resample = mod_1_wfl_folds) %>%
+  collect_metrics()
+
+
+mod_2_wfl_folds <- vfold_cv(week_10, v = 10)
+
+fit_resamples(resample = mod_2_wfl_folds) %>%
+  collect_metrics()
+```
 
 
 
@@ -67,4 +99,13 @@ week_10_folds <- vfold_cv(week_10_train, v = 10)
 * Provide the 95% confidence interval for this estimate.
 
 * Write a few sentences interpreting this confidence interval.
+
+```{r}
+
+mod_1_wfl %>%
+  fit(data = week_10) %>%
+  predict(new_data = week_10$reg_chg ~ ,
+          type = "conf_int",
+          level = 0.95)
+```
 
